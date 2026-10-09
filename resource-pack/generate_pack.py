@@ -118,7 +118,7 @@ def make_pack() -> None:
     for code in country_codes():
         file = SOURCE / "assets" / "betterchat" / "textures" / "flags" / f"{code.lower()}.png"
         if not file.is_file():
-            raise FileNotFoundError(f"Missing generated flag asset {file}; run fetch_flags.py first")
+            continue
         providers.append({
             "type": "bitmap",
             "file": f"betterchat:flags/{code.lower()}.png",
