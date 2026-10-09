@@ -1,0 +1,13 @@
+{
+  "pack": {
+    "min_format": [
+      88,
+      0
+    ],
+    "max_format": [
+      97,
+      1
+    ],
+    "description": "BetterChat country flags and rectangular Earth flag"
+  }
+}

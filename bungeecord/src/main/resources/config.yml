@@ -1,0 +1,15 @@
+proxy-mode:
+  enabled: true
+  secret: '' # Required: same random 32+ character secret on the proxy and every backend.
+storage:
+  type: mariadb # Proxy mode requires mariadb; sqlite is only for standalone Paper servers.
+  sqlite-file: betterchat.db
+  mariadb:
+    host: 127.0.0.1
+    port: 3306
+    database: betterchat
+    username: betterchat
+    password: change-me
+    pool-size: 8
+bstats:
+  enabled: true

@@ -1,0 +1,113 @@
+# BetterChat Paper/Folia configuration
+storage:
+  type: sqlite # sqlite or mariadb
+  sqlite-file: betterchat.db
+  mariadb:
+    host: 127.0.0.1
+    port: 3306
+    database: betterchat
+    username: betterchat
+    password: change-me
+    pool-size: 8
+
+proxy-mode:
+  enabled: false
+  server-id: paper-1 # Give each backend a stable, unique id in proxy mode.
+  secret: '' # Required in proxy mode: use the same random 32+ character secret everywhere.
+
+defaults:
+  language: en_us
+  console-language: en_us
+  country: EARTH
+
+chat:
+  enabled: true
+  translation-enabled: false
+  built-in-format: true
+  auto-disable-format-with-known-plugin: true
+  format: '' # empty uses the built-in format and flag-position
+  flag-position: before-name # before-name or after-name
+  show-original-on-translation-failure: true
+  translate-console: true
+  console-format: '[<language>] <player>: <message>'
+  detected-formatters: [VentureChat, EssentialsChat, ChatControl, LPC]
+
+flags:
+  enabled: true
+  auto-detect-ip: false
+  auto-detect-endpoint: 'https://ipapi.co/{ip}/json/'
+  blacklist: []
+  resource-pack:
+    enabled: false
+    url: '' # Public HTTPS URL to resource-pack/BetterChat-Flags.zip
+    sha1: ''
+    prompt: 'Install BetterChat Flags to see image flags.'
+    required: false
+    use-glyphs: false # Set true after players can download the pack.
+  tab-list:
+    enabled: false
+    position: before-name
+  nametag:
+    enabled: false
+    position: before-name
+    worlds: [] # empty = all worlds, unless blacklisted
+    blacklist-worlds: []
+
+groups:
+  enabled: false
+  provider: luckperms # luckperms or vault (Vault needs a permission plugin with group support)
+  language-groups: false
+  nationality-groups: false
+  group-prefix: betterchat_
+
+language:
+  blacklist: []
+
+translation:
+  batch-window-ms: 45
+  batch-size: 32
+  queue-capacity: 2048
+  timeout-seconds: 35
+  temperature: 0.25
+  provider-order: [google-cloud, gemini, openai, anthropic, xai, openrouter, groq, ollama]
+  providers:
+    google-cloud:
+      enabled: false
+      api-keys: []
+    gemini:
+      enabled: false
+      base-url: https://generativelanguage.googleapis.com/v1beta/openai
+      models: [gemini-3.8-flash, gemini-3.7-flash, gemini-2.5-flash]
+      api-keys: []
+    openai:
+      enabled: false
+      base-url: https://api.openai.com/v1
+      models: [gpt-4.1-mini, gpt-4o-mini]
+      api-keys: []
+    openrouter:
+      enabled: false
+      base-url: https://openrouter.ai/api/v1
+      models: [google/gemini-3.8-flash, google/gemini-2.5-flash]
+      api-keys: []
+    groq:
+      enabled: false
+      base-url: https://api.groq.com/openai/v1
+      models: [openai/gpt-oss-20b, llama-3.3-70b-versatile]
+      api-keys: []
+    anthropic:
+      enabled: false
+      models: [claude-sonnet-4-5]
+      api-keys: []
+    xai:
+      enabled: false
+      base-url: https://api.x.ai/v1
+      models: [grok-4]
+      api-keys: []
+    ollama:
+      enabled: false
+      base-url: http://127.0.0.1:11434/v1
+      model: llama3.1:8b
+      api-keys: ['']
+
+bstats:
+  enabled: true

@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="300" viewBox="0 0 1200 300" role="img" aria-labelledby="title desc">
+  <title id="title">BetterChat</title>
+  <desc id="desc">A Minecraft inspired chat bubble with language and flag symbols.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#101b2b"/>
+      <stop offset="1" stop-color="#1d3b40"/>
+    </linearGradient>
+    <linearGradient id="bubble" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0" stop-color="#73e0bb"/>
+      <stop offset="1" stop-color="#a8f3ca"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="300" rx="28" fill="url(#bg)"/>
+  <path d="M0 237h1200v63H0z" fill="#192a32" opacity=".75"/>
+  <g opacity=".24" fill="#8bcdb6">
+    <path d="M850 36h46v46h-46zM896 82h46v46h-46zM988 36h46v46h-46zM1080 82h46v46h-46zM1034 128h46v46h-46zM850 174h46v46h-46zM1126 174h46v46h-46z"/>
+    <path d="M65 30h46v46H65zM19 76h46v46H19zM111 122h46v46h-46zM65 168h46v46H65z"/>
+  </g>
+  <g transform="translate(840 48)">
+    <rect x="0" y="0" width="254" height="144" rx="24" fill="url(#bubble)"/>
+    <path d="M57 143 34 174v-34" fill="#8be9bd"/>
+    <rect x="28" y="36" width="140" height="12" rx="6" fill="#183b3a" opacity=".85"/>
+    <rect x="28" y="62" width="188" height="12" rx="6" fill="#183b3a" opacity=".55"/>
+    <rect x="28" y="88" width="120" height="12" rx="6" fill="#183b3a" opacity=".35"/>
+    <circle cx="210" cy="116" r="21" fill="#f4f7e9"/>
+    <text x="210" y="124" text-anchor="middle" font-family="sans-serif" font-size="27">🌍</text>
+  </g>
+  <g transform="translate(1010 198)">
+    <rect x="0" y="0" width="28" height="28" fill="#e24c4b"/><rect x="28" y="0" width="28" height="28" fill="#f2f3f3"/><rect x="56" y="0" width="28" height="28" fill="#3c82ce"/>
+    <rect x="84" y="0" width="28" height="28" fill="#ffc840"/><rect x="112" y="0" width="28" height="28" fill="#e24c4b"/><rect x="140" y="0" width="28" height="28" fill="#f2f3f3"/><rect x="168" y="0" width="28" height="28" fill="#47b779"/>
+  </g>
+  <text x="100" y="138" fill="#f4f7f4" font-family="Arial, Helvetica, sans-serif" font-size="72" font-weight="800" letter-spacing="-3">BetterChat</text>
+  <text x="104" y="190" fill="#9bd9c4" font-family="Arial, Helvetica, sans-serif" font-size="25" letter-spacing="1.4">ONE CHAT · EVERY LANGUAGE · A LITTLE MORE OF HOME</text>
+</svg>
