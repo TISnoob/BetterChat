@@ -9,6 +9,8 @@ BetterChat 0.1.0-pre.1 is ready for testing. It brings recipient-aware multiling
 - `BetterChat-BungeeCord-0.1.0-pre.1.jar` for BungeeCord proxy mode
 - `BetterChat-Flags-0.1.0-pre.1.zip`, the generated resource pack with 249 country flags and the Earth glyph
 
+The release bundle also includes SHA-256 checksums for every asset and the resource pack's SHA-1 value for `server.properties` or BetterChat's resource-pack configuration.
+
 ## Highlights
 
 - Translate chat for each recipient's selected language using Gemini, OpenAI-compatible, Anthropic, xAI, Groq, OpenRouter, or local Ollama providers.

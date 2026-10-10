@@ -131,6 +131,14 @@ resource-pack/BetterChat-Flags.zip
 
 `python3` and Java 25 are required for the pack generator. The pack graphics are checked in, so regular Gradle builds do not need network access to fetch flags.
 
+To collect the pre-release assets and checksums in one directory, run:
+
+```shell
+./gradlew preparePreRelease
+```
+
+The bundle is written to `build/pre-release/0.1.0-pre.1/` and contains the Paper, BungeeCord, and Velocity jars, the versioned flag pack, `RELEASE-NOTES.md`, `SHA256SUMS`, and the pack's `RESOURCE-PACK-SHA1.txt` for Minecraft server configuration.
+
 ## Documentation
 
 - [Paper/Folia and proxy installation](docs/PROXY.md)

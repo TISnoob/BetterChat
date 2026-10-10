@@ -50,12 +50,14 @@ val preparePreRelease = tasks.register<Sync>("preparePreRelease") {
         include("BetterChat-Flags.zip")
         rename("BetterChat-Flags.zip", "BetterChat-Flags-$version.zip")
     }
-    from(layout.projectDirectory.file("docs/RELEASE-0.1.0-pre.1.md")) {
+    from(layout.projectDirectory.file("docs/RELEASE-$version.md")) {
         rename { "RELEASE-NOTES.md" }
     }
 
     val checksumsFile = preReleaseDirectory.map { it.file("SHA256SUMS") }
+    val resourcePackSha1File = preReleaseDirectory.map { it.file("RESOURCE-PACK-SHA1.txt") }
     outputs.file(checksumsFile)
+    outputs.file(resourcePackSha1File)
     doLast {
         val directory = preReleaseDirectory.get().asFile
         val assets = listOf(
@@ -70,6 +72,11 @@ val preparePreRelease = tasks.register<Sync>("preparePreRelease") {
             "${digest.joinToString("") { byte -> "%02x".format(byte) }}  $asset"
         }
         checksumsFile.get().asFile.writeText(checksums)
+        val resourcePackSha1 = java.security.MessageDigest.getInstance("SHA-1")
+            .digest(directory.resolve("BetterChat-Flags-$version.zip").readBytes())
+        resourcePackSha1File.get().asFile.writeText(
+            "${resourcePackSha1.joinToString("") { byte -> "%02x".format(byte) }}\n"
+        )
     }
 }
 
