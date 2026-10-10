@@ -63,7 +63,8 @@ final class VentureChatAdapter implements Listener {
             for (Player recipient : recipients) {
                 PlayerPreferences target = plugin.preferences().get(recipient.getUniqueId());
                 listenerPreferences.put(recipient.getUniqueId(), target);
-                if (!target.language().equals(sender.language())) targets.add(target.language());
+                if (target.translationEnabled() && !target.language().equals(sender.language()))
+                    targets.add(target.language());
             }
             String consoleLanguage = plugin.settings().string("defaults.console-language", "en_us");
             if (plugin.settings().bool("chat.translate-console", true) && !consoleLanguage.equals(sender.language()))
@@ -92,7 +93,7 @@ final class VentureChatAdapter implements Listener {
                       Map<String, String> translations) {
         for (Player recipient : recipients) {
             PlayerPreferences target = preferences.get(recipient.getUniqueId());
-            String translated = target.language().equals(sender.language()) ? original
+            String translated = !target.translationEnabled() || target.language().equals(sender.language()) ? original
                     : translations.getOrDefault(target.language(), original);
             String withStyle = retainLeadingLegacyStyle(original, translated);
             Component output = LEGACY.deserialize(prefix + withStyle);

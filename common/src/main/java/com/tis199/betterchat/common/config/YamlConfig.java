@@ -10,6 +10,7 @@ import java.io.Reader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -18,6 +19,13 @@ public final class YamlConfig {
     private final Map<String, Object> root;
 
     private YamlConfig(Map<String, Object> root) { this.root = root; }
+
+    /** Returns a view where values in {@code overrides} replace matching top-level sections. */
+    public static YamlConfig merge(YamlConfig base, YamlConfig overrides) {
+        Map<String, Object> merged = new LinkedHashMap<>(base.root);
+        merged.putAll(overrides.root);
+        return new YamlConfig(merged);
+    }
 
     @SuppressWarnings("unchecked")
     public static YamlConfig load(Path file, InputStream defaults) throws IOException {

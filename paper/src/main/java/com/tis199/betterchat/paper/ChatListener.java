@@ -72,7 +72,8 @@ final class ChatListener implements Listener {
         for (Player viewer : viewers) {
             PlayerPreferences selected = plugin.preferences().get(viewer.getUniqueId());
             listenerPreferences.put(viewer.getUniqueId(), selected);
-            if (!selected.language().equals(senderPreferences.language())) targetLanguages.add(selected.language());
+            if (selected.translationEnabled() && !selected.language().equals(senderPreferences.language()))
+                targetLanguages.add(selected.language());
         }
         String consoleLanguage = config.string("defaults.console-language", "en_us");
         if (config.bool("chat.translate-console", true) && !consoleLanguage.equals(senderPreferences.language()))
@@ -102,9 +103,11 @@ final class ChatListener implements Listener {
         YamlConfig config = plugin.settings();
         for (Player viewer : viewers) {
             PlayerPreferences target = listenerPreferences.get(viewer.getUniqueId());
-            String translated = target.language().equals(senderPreferences.language()) ? null
+            boolean wantsTranslation = target.translationEnabled()
+                    && !target.language().equals(senderPreferences.language());
+            String translated = !wantsTranslation ? null
                     : translationsByLanguage.get(target.language());
-            if (translated == null && !target.language().equals(senderPreferences.language())
+            if (translated == null && wantsTranslation
                     && !config.bool("chat.show-original-on-translation-failure", true)) continue;
             Component message = translated == null ? originalComponent : Component.text(translated);
             Component rendered = renderer.render(sender, sourceDisplayName, message, viewer);
@@ -129,7 +132,8 @@ final class ChatListener implements Listener {
             UUID id = viewer.getUniqueId();
             PlayerPreferences selected = plugin.preferences().get(id);
             listenerPreferences.put(id, selected);
-            if (translate && !selected.language().equals(sender.language())) targetLanguages.add(selected.language());
+            if (translate && selected.translationEnabled() && !selected.language().equals(sender.language()))
+                targetLanguages.add(selected.language());
         }
         String consoleLanguage = config.string("defaults.console-language", "en_us");
         if (translate && config.bool("chat.translate-console", true) && !consoleLanguage.equals(sender.language()))
@@ -157,9 +161,10 @@ final class ChatListener implements Listener {
         for (Player viewer : viewers) {
             PlayerPreferences target = listenerPreferences.get(viewer.getUniqueId());
             if (target == null) target = plugin.preferences().get(viewer.getUniqueId());
-            String text = target.language().equals(sender.language()) ? original : translationsByLanguage.get(target.language());
+            boolean wantsTranslation = target.translationEnabled() && !target.language().equals(sender.language());
+            String text = wantsTranslation ? translationsByLanguage.get(target.language()) : original;
             if (text == null) {
-                if (!config.bool("chat.show-original-on-translation-failure", true)) continue;
+                if (wantsTranslation && !config.bool("chat.show-original-on-translation-failure", true)) continue;
                 text = original;
             }
             Component message = format(senderName, sender, text, config);

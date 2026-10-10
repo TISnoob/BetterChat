@@ -2,7 +2,7 @@
 
 ## Built-in MiniMessage format
 
-When BetterChat owns chat formatting, configure `chat.format` with MiniMessage tags and these placeholders:
+When BetterChat owns chat formatting, configure `chat.format` in `plugins/BetterChat/ai.yml` with MiniMessage tags and these placeholders:
 
 ```yaml
 chat:
@@ -12,7 +12,7 @@ chat:
 
 Use `<flag>` for the sender's selected country, `<global_flag>` or `<earth_flag>` for Earth, `<player>` for the sender name, `<language>` and `<country>` for selected codes, and `<message>` for the safe text component. When `chat.format` is blank, `chat.flag-position` selects the built-in before-name or after-name layout.
 
-Players start with the global Earth flag unless `defaults.country` is changed. They can select a different flag with `/bc flag <country-code>` or from `/bc menu`.
+Players start with the global Earth flag unless `defaults.country` is changed. They can select a different flag by code or name (for example, `/bc flag BD` or `/bc flag Bangladesh`), use `/bc flag global` for Earth, or choose it from `/bc menu`.
 
 ## PlaceholderAPI
 

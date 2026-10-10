@@ -20,18 +20,6 @@ defaults:
   console-language: en_us
   country: EARTH
 
-chat:
-  enabled: true
-  translation-enabled: false
-  built-in-format: true
-  auto-disable-format-with-known-plugin: true
-  format: '' # empty uses the built-in format and flag-position
-  flag-position: before-name # before-name or after-name
-  show-original-on-translation-failure: true
-  translate-console: true
-  console-format: '[<language>] <player>: <message>'
-  detected-formatters: [VentureChat, EssentialsChat, ChatControl, LPC]
-
 flags:
   enabled: true
   auto-detect-ip: false
@@ -62,52 +50,6 @@ groups:
 
 language:
   blacklist: []
-
-translation:
-  batch-window-ms: 45
-  batch-size: 32
-  queue-capacity: 2048
-  timeout-seconds: 35
-  temperature: 0.25
-  provider-order: [google-cloud, gemini, openai, anthropic, xai, openrouter, groq, ollama]
-  providers:
-    google-cloud:
-      enabled: false
-      api-keys: []
-    gemini:
-      enabled: false
-      base-url: https://generativelanguage.googleapis.com/v1beta/openai
-      models: [gemini-3.8-flash, gemini-3.7-flash, gemini-2.5-flash]
-      api-keys: []
-    openai:
-      enabled: false
-      base-url: https://api.openai.com/v1
-      models: [gpt-4.1-mini, gpt-4o-mini]
-      api-keys: []
-    openrouter:
-      enabled: false
-      base-url: https://openrouter.ai/api/v1
-      models: [google/gemini-3.8-flash, google/gemini-2.5-flash]
-      api-keys: []
-    groq:
-      enabled: false
-      base-url: https://api.groq.com/openai/v1
-      models: [openai/gpt-oss-20b, llama-3.3-70b-versatile]
-      api-keys: []
-    anthropic:
-      enabled: false
-      models: [claude-sonnet-4-5]
-      api-keys: []
-    xai:
-      enabled: false
-      base-url: https://api.x.ai/v1
-      models: [grok-4]
-      api-keys: []
-    ollama:
-      enabled: false
-      base-url: http://127.0.0.1:11434/v1
-      model: llama3.1:8b
-      api-keys: ['']
 
 bstats:
   enabled: true

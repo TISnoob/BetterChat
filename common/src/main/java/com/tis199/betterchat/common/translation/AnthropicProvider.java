@@ -44,7 +44,7 @@ public final class AnthropicProvider implements TranslationProvider {
         body.addProperty("model", model);
         body.addProperty("max_tokens", Math.max(512, messages.size() * 180));
         body.addProperty("temperature", temperature);
-        body.addProperty("system", OpenAiCompatibleProvider.systemPrompt(targetLanguages, probableSourceLanguage, messages.size()));
+        body.addProperty("system", TranslationPrompt.render(targetLanguages, probableSourceLanguage, messages.size()));
         JsonArray contents = new JsonArray();
         for (int index = 0; index < messages.size(); index++) {
             JsonObject item = new JsonObject();
@@ -55,7 +55,8 @@ public final class AnthropicProvider implements TranslationProvider {
         JsonArray chat = new JsonArray();
         JsonObject user = new JsonObject();
         user.addProperty("role", "user");
-        user.add("content", contents);
+        // Anthropic accepts a text string or typed text blocks, not our arbitrary {id,text} records.
+        user.addProperty("content", contents.toString());
         chat.add(user);
         body.add("messages", chat);
         HttpRequest request = HttpRequest.newBuilder(URI.create("https://api.anthropic.com/v1/messages"))
@@ -64,7 +65,8 @@ public final class AnthropicProvider implements TranslationProvider {
                 .POST(HttpRequest.BodyPublishers.ofString(body.toString())).build();
         return HTTP.sendAsync(request, HttpResponse.BodyHandlers.ofString()).thenApply(response -> {
             if (response.statusCode() < 200 || response.statusCode() >= 300) {
-                throw new TranslationException("Anthropic returned HTTP " + response.statusCode(), response.statusCode());
+                throw new TranslationException("HTTP " + response.statusCode()
+                        + OpenAiCompatibleProvider.errorDetail(response.body()), response.statusCode());
             }
             try {
                 JsonArray blocks = JsonParser.parseString(response.body()).getAsJsonObject().getAsJsonArray("content");

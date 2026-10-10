@@ -27,11 +27,12 @@ final class PreferenceCache {
     void load(Player player, Consumer<PlayerPreferences> callback) {
         UUID id = player.getUniqueId();
         store.load(id).thenAccept(saved -> {
-            PlayerPreferences preferences = saved.orElseGet(() -> new PlayerPreferences(
+            PlayerPreferences loaded = saved.orElseGet(() -> new PlayerPreferences(
                     id, defaultLanguage, defaultCountry, defaultAutomaticCountry));
-            cache.put(id, preferences);
-            if (saved.isEmpty()) store.save(preferences);
-            callback.accept(preferences);
+            PlayerPreferences updatedWhileLoading = cache.putIfAbsent(id, loaded);
+            PlayerPreferences effective = updatedWhileLoading == null ? loaded : updatedWhileLoading;
+            if (saved.isEmpty() && updatedWhileLoading == null && cache.get(id) == loaded) store.save(loaded);
+            callback.accept(cache.getOrDefault(id, effective));
         });
     }
 

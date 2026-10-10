@@ -16,13 +16,37 @@ The font map assigns each two-letter country code a stable private-use code poin
 
 ## Host and send
 
-Upload the ZIP to a public HTTPS server that returns the ZIP directly. The Minecraft client needs to reach the URL; a path on the game server is not enough. Compute the SHA-1 after the final upload/build:
+Upload the ZIP to a public HTTPS URL that returns the ZIP directly. The Minecraft client must be able to reach that URL; a file path on the game server is not enough. Compute the SHA-1 after the final build:
 
 ```shell
 sha1sum resource-pack/BetterChat-Flags.zip
 ```
 
-Set `flags.resource-pack.enabled`, `url`, and `sha1` in Paper's config. Turn on `use-glyphs` after the pack is available to players. Leave `required: false` to make pack acceptance optional. Repeat the Paper config on all backends so players get the same font regardless of server.
+Paper can send the pack itself from `server.properties`, which is the simplest choice when this is the server's main pack:
+
+```properties
+resource-pack=https://example.com/BetterChat-Flags.zip
+resource-pack-sha1=YOUR_40_CHARACTER_SHA1
+resource-pack-prompt=Install BetterChat Flags to see country flags.
+require-resource-pack=false
+```
+
+Restart the server after editing `server.properties`. Set `flags.resource-pack.use-glyphs: true` in `plugins/BetterChat/config.yml`. When using this Paper setting, leave `flags.resource-pack.enabled: false` to avoid sending the same pack twice.
+
+Alternatively, BetterChat can request the pack itself from its config:
+
+```yaml
+flags:
+  resource-pack:
+    enabled: true
+    url: 'https://example.com/BetterChat-Flags.zip'
+    sha1: 'YOUR_40_CHARACTER_SHA1'
+    prompt: 'Install BetterChat Flags to see country flags.'
+    required: false
+    use-glyphs: true
+```
+
+If both settings use the same URL, BetterChat detects the Paper setting and avoids a duplicate prompt. The plugin route can stack its flag pack on top of a different server pack. Repeat the chosen setup on every backend so players get the same font regardless of server. Keep `required: false` unless joining without the pack should be blocked.
 
 The generated `pack.mcmeta` declares resource pack formats 88.0 through 97.1, covering Minecraft Java 26.2 (format 88.0) and 26.3 (format 97.1). It uses the modern `min_format` and `max_format` metadata fields so both clients can load the same pack.
 

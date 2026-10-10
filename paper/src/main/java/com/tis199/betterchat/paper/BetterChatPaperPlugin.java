@@ -17,10 +17,13 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.event.player.PlayerResourcePackStatusEvent;
 import org.bukkit.plugin.messaging.PluginMessageListener;
 import org.bukkit.scoreboard.Scoreboard;
 import org.bukkit.scoreboard.Team;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.configuration.ConfigurationSection;
+import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.net.URI;
 import java.net.URLEncoder;
@@ -28,7 +31,10 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.net.http.HttpClient;
@@ -37,6 +43,8 @@ import java.util.concurrent.ConcurrentMap;
 
 public final class BetterChatPaperPlugin extends JavaPlugin implements Listener, PluginMessageListener {
     private static final int BSTATS_PLUGIN_ID = 34609;
+    private static final UUID FLAGS_RESOURCE_PACK_ID = UUID.nameUUIDFromBytes(
+            "betterchat:flags".getBytes(StandardCharsets.UTF_8));
     static final String PROXY_CHANNEL = "betterchat:chat";
     private static final HttpClient HTTP_CLIENT = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(4)).build();
     private volatile YamlConfig settings;
@@ -54,7 +62,7 @@ public final class BetterChatPaperPlugin extends JavaPlugin implements Listener,
     @Override
     public void onEnable() {
         try {
-            settings = YamlConfig.load(getDataFolder().toPath().resolve("config.yml"), getResource("config.yml"));
+            settings = loadEffectiveSettings();
             store = openStore(settings);
         } catch (Exception exception) {
             getLogger().severe("Could not initialize BetterChat storage: " + exception.getMessage());
@@ -75,12 +83,104 @@ public final class BetterChatPaperPlugin extends JavaPlugin implements Listener,
         }
         getCommand("bc").setExecutor(new BetterChatCommand(this, menu));
         getCommand("translate").setExecutor(new TranslateCommand(this));
+        TranslationPreferenceCommand translationPreference = new TranslationPreferenceCommand(this);
+        getCommand("translation").setExecutor(translationPreference);
+        getCommand("translation").setTabCompleter(translationPreference);
 
         if (Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) {
             new BetterChatExpansion(this).register();
         }
         if (settings.bool("bstats.enabled", true)) new Metrics(this, BSTATS_PLUGIN_ID);
         getLogger().info("Enabled. Proxy mode is " + (settings.bool("proxy-mode.enabled", false) ? "on" : "off") + ".");
+    }
+
+    private YamlConfig loadEffectiveSettings() throws IOException {
+        Path dataFolder = getDataFolder().toPath();
+        Path configFile = dataFolder.resolve("config.yml");
+        Path aiFile = dataFolder.resolve("ai.yml");
+        YamlConfig general = YamlConfig.load(configFile, getResource("config.yml"));
+        boolean createAiConfig = Files.notExists(aiFile);
+        YamlConfig.load(aiFile, getResource("ai.yml"));
+        if (createAiConfig) migrateLegacyAiSettings(configFile, aiFile);
+        YamlConfig ai = YamlConfig.load(aiFile, null);
+        return YamlConfig.merge(general, ai);
+    }
+
+    private void migrateLegacyAiSettings(Path legacyFile, Path aiFile) throws IOException {
+        if (Files.notExists(legacyFile)) return;
+        YamlConfiguration legacy = YamlConfiguration.loadConfiguration(legacyFile.toFile());
+        YamlConfiguration target = YamlConfiguration.loadConfiguration(aiFile.toFile());
+        boolean migrated = false;
+        for (String sectionName : List.of("chat", "translation")) {
+            ConfigurationSection section = legacy.getConfigurationSection(sectionName);
+            if (section == null) continue;
+            copySection(section, target, sectionName);
+            migrated = true;
+        }
+        if (legacy.getBoolean("translation.providers.google-cloud.enabled", false)) {
+            getLogger().warning("Google Cloud Translation is no longer used; configure a text-generation provider in ai.yml instead.");
+        }
+        if (migrated) {
+            target.save(aiFile.toFile());
+            try {
+                removeLegacyAiSections(legacyFile);
+            } catch (IOException exception) {
+                getLogger().warning("AI settings were copied to ai.yml, but the old sections remain in config.yml: "
+                        + exception.getMessage());
+            }
+            getLogger().info("Moved legacy chat and translation settings from config.yml into ai.yml.");
+        }
+    }
+
+    private static void removeLegacyAiSections(Path configFile) throws IOException {
+        List<String> lines = Files.readAllLines(configFile, StandardCharsets.UTF_8);
+        List<String> retained = new ArrayList<>(lines.size());
+        boolean removing = false;
+        boolean changed = false;
+        for (String line : lines) {
+            if (removing && isTopLevelYamlKey(line)) removing = false;
+            if (!removing && (isTopLevelSection(line, "chat") || isTopLevelSection(line, "translation"))) {
+                removing = true;
+                changed = true;
+                continue;
+            }
+            if (!removing) retained.add(line);
+        }
+        if (changed) Files.write(configFile, retained, StandardCharsets.UTF_8);
+    }
+
+    private static boolean isTopLevelSection(String line, String name) {
+        if (line.isEmpty() || Character.isWhitespace(line.charAt(0))) return false;
+        String prefix = name + ":";
+        return line.startsWith(prefix)
+                && (line.length() == prefix.length() || Character.isWhitespace(line.charAt(prefix.length()))
+                || line.charAt(prefix.length()) == '#');
+    }
+
+    private static boolean isTopLevelYamlKey(String line) {
+        if (line.isBlank() || line.charAt(0) == '#' || Character.isWhitespace(line.charAt(0))) return false;
+        int colon = line.indexOf(':');
+        return colon > 0;
+    }
+
+    private static void copySection(ConfigurationSection source, YamlConfiguration target, String path) {
+        for (String key : source.getKeys(false)) {
+            Object value = source.get(key);
+            String childPath = path + "." + key;
+            if (childPath.equals("translation.system-prompt")) continue;
+            if (childPath.equals("translation.providers.google-cloud")) continue;
+            if (childPath.equals("translation.provider-order") && value instanceof List<?> providers) {
+                target.set(childPath, providers.stream().map(String::valueOf)
+                        .filter(provider -> !provider.equalsIgnoreCase("google-cloud")).toList());
+                continue;
+            }
+            if (value instanceof ConfigurationSection child) {
+                if (target.getConfigurationSection(childPath) == null) target.createSection(childPath);
+                copySection(child, target, childPath);
+            } else {
+                target.set(childPath, value);
+            }
+        }
     }
 
     private void createServices() {
@@ -274,8 +374,10 @@ public final class BetterChatPaperPlugin extends JavaPlugin implements Listener,
                 net.kyori.adventure.text.Component name = player.displayName();
                 net.kyori.adventure.text.Component flagComponent = ChatListener.flagComponent(selected.country(), settings);
                 net.kyori.adventure.text.Component decorated = settings.string("flags.tab-list.position", "before-name").equalsIgnoreCase("after-name")
-                        ? name.append(net.kyori.adventure.text.Component.space()).append(flagComponent)
-                        : flagComponent.append(net.kyori.adventure.text.Component.space()).append(name);
+                        ? net.kyori.adventure.text.Component.empty().append(name)
+                                .append(net.kyori.adventure.text.Component.space()).append(flagComponent)
+                        : net.kyori.adventure.text.Component.empty().append(flagComponent)
+                                .append(net.kyori.adventure.text.Component.space()).append(name);
                 player.playerListName(decorated);
                 tabListDecorated.add(player.getUniqueId());
             } else if (tabListDecorated.remove(player.getUniqueId())) {
@@ -342,19 +444,35 @@ public final class BetterChatPaperPlugin extends JavaPlugin implements Listener,
         if (!settings.bool("flags.resource-pack.enabled", false)) return;
         String url = settings.string("flags.resource-pack.url", "").trim();
         if (url.isEmpty()) return;
+        String serverPackUrl = getServer().getResourcePack();
+        if (serverPackUrl != null && serverPackUrl.trim().equals(url)) return;
         try {
             String sha1 = settings.string("flags.resource-pack.sha1", "").trim();
             byte[] hash = sha1.isEmpty() ? new byte[0] : java.util.HexFormat.of().parseHex(sha1);
-            net.kyori.adventure.text.Component prompt = net.kyori.adventure.text.Component.text(
-                    settings.string("flags.resource-pack.prompt", "Install BetterChat Flags to see country flags."));
-            player.setResourcePack(url, hash, prompt, settings.bool("flags.resource-pack.required", false));
+            if (hash.length != 0 && hash.length != 20) {
+                throw new IllegalArgumentException("SHA-1 must contain exactly 40 hexadecimal characters");
+            }
+            String prompt = settings.string("flags.resource-pack.prompt", "Install BetterChat Flags to see country flags.");
+            player.addResourcePack(FLAGS_RESOURCE_PACK_ID, url, hash, prompt,
+                    settings.bool("flags.resource-pack.required", false));
         } catch (RuntimeException exception) {
             getLogger().warning("Could not send the configured flag resource pack: " + exception.getMessage());
         }
     }
 
+    @EventHandler
+    public void onFlagResourcePackStatus(PlayerResourcePackStatusEvent event) {
+        if (!FLAGS_RESOURCE_PACK_ID.equals(event.getID())) return;
+        switch (event.getStatus()) {
+            case DECLINED, FAILED_DOWNLOAD, INVALID_URL, FAILED_RELOAD -> getLogger().warning(
+                    "Player " + event.getPlayer().getName() + " could not apply the BetterChat flag resource pack ("
+                            + event.getStatus() + "). Check that its URL is public and the ZIP is valid.");
+            default -> { }
+        }
+    }
+
     void reloadSettings() throws Exception {
-        YamlConfig nextSettings = YamlConfig.load(getDataFolder().toPath().resolve("config.yml"), null);
+        YamlConfig nextSettings = loadEffectiveSettings();
         PreferenceStore nextStore = openStore(nextSettings);
         PreferenceStore oldStore = store;
         TranslationBatchQueue oldTranslations = translations;

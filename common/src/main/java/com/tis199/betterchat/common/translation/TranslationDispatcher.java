@@ -14,7 +14,7 @@ import java.util.function.Consumer;
 /** Rotates configured keys/providers, falls back on errors, and quarantines 429 keys until restart. */
 public final class TranslationDispatcher {
     private final List<TranslationProvider> providers;
-    private final Consumer<String> disabledKeyNotice;
+    private final Consumer<String> providerNotice;
     private final AtomicInteger cursor = new AtomicInteger();
     private final Map<String, Boolean> disabledKeys = new ConcurrentHashMap<>();
     private final Map<CacheKey, CacheEntry> cache = new ConcurrentHashMap<>();
@@ -27,9 +27,9 @@ public final class TranslationDispatcher {
         this(providers, ignored -> { });
     }
 
-    public TranslationDispatcher(List<TranslationProvider> providers, Consumer<String> disabledKeyNotice) {
+    public TranslationDispatcher(List<TranslationProvider> providers, Consumer<String> providerNotice) {
         this.providers = List.copyOf(providers);
-        this.disabledKeyNotice = disabledKeyNotice == null ? ignored -> { } : disabledKeyNotice;
+        this.providerNotice = providerNotice == null ? ignored -> { } : providerNotice;
     }
 
     public CompletableFuture<Map<String, List<String>>> translate(
@@ -106,12 +106,33 @@ public final class TranslationDispatcher {
             return CompletableFuture.failedFuture(new IllegalStateException("All configured translation keys are unavailable"));
         }
         TranslationProvider provider = providers.get(start);
-        return provider.translate(messages, targets, sourceHint).handle((result, failure) -> {
+        CompletableFuture<Map<String, List<String>>> request;
+        try {
+            request = provider.translate(messages, targets, sourceHint);
+        } catch (RuntimeException failure) {
+            request = CompletableFuture.failedFuture(failure);
+        }
+        return request.handle((result, failure) -> {
             if (failure == null) return CompletableFuture.completedFuture(result);
             Throwable cause = unwrap(failure);
+            String failureType = cause instanceof TranslationException exception
+                    ? "HTTP " + exception.statusCode()
+                    : cause.getClass().getSimpleName();
+            String detail = cause instanceof TranslationException exception
+                    ? exception.getMessage() : cause.getMessage();
+            if (detail != null) {
+                detail = detail.replaceAll("[\\p{Cntrl}]", " ").trim();
+                if (cause instanceof TranslationException exception) {
+                    String statusPrefix = "HTTP " + exception.statusCode() + ":";
+                    if (detail.startsWith(statusPrefix)) detail = detail.substring(statusPrefix.length()).trim();
+                }
+                if (detail.length() > 240) detail = detail.substring(0, 240);
+            }
+            providerNotice.accept("Translation provider " + provider.id() + " key " + provider.keyId()
+                    + " failed (" + failureType + (detail == null || detail.isBlank() ? "" : ": " + detail) + ").");
             if (cause instanceof TranslationException exception && exception.statusCode() == 429) {
                 if (disabledKeys.putIfAbsent(provider.keyId(), true) == null) {
-                    disabledKeyNotice.accept("Provider " + provider.id() + " key " + provider.keyId()
+                    providerNotice.accept("Provider " + provider.id() + " key " + provider.keyId()
                             + " returned HTTP 429 and is disabled until restart.");
                 }
             }

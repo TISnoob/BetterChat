@@ -19,7 +19,7 @@
 
 ## Features
 
-- Recipient-aware chat translation with Google Cloud Translation, OpenAI-compatible APIs, Anthropic, Gemini, xAI, Groq, OpenRouter, and local Ollama endpoints.
+- Recipient-aware chat translation through ordinary text-generation models: Gemini, OpenAI-compatible APIs, Anthropic, xAI, Groq, OpenRouter, and local Ollama endpoints.
 - Minecraft locales, Java's ISO-639 language list, and custom language names or codes. For non-Minecraft locales, AI providers use Latin-letter romanization (for example, Bengali as `Ekhane Asho`).
 - One-off `/translate <target-language> <text>` translations use the same queue, cache, and provider settings as chat.
 - Multiple keys per provider and multiple model fallbacks. Keys rotate across concurrent batches; a key receiving HTTP 429 is skipped until restart.
@@ -45,8 +45,8 @@ PlaceholderAPI, LuckPerms, Vault, and VentureChat are optional integrations. Bet
 
 1. Download `BetterChat-Paper-0.1.0-SNAPSHOT.jar` from the build outputs or build it with Gradle.
 2. Put it in `plugins/` and start the server once.
-3. Edit `plugins/BetterChat/config.yml`. Keep `proxy-mode.enabled: false` and `storage.type: sqlite` for a standalone server.
-4. Add translation provider keys if chat translation is wanted, then restart.
+3. Edit `plugins/BetterChat/config.yml` for storage and flags. Keep `proxy-mode.enabled: false` and `storage.type: sqlite` for a standalone server.
+4. Edit `plugins/BetterChat/ai.yml` for chat behavior and AI provider keys. Enable `chat.translation-enabled` if you want chat translated, then restart.
 5. Use `/bc menu` to choose a language and flag.
 
 ### BungeeCord or Velocity network
@@ -57,19 +57,9 @@ Proxy mode refuses to start BetterChat if the shared MariaDB connection cannot b
 
 ## Resource pack
 
-The pack is generated at [`resource-pack/BetterChat-Flags.zip`](resource-pack/BetterChat-Flags.zip). Upload it to a public HTTPS host and configure the URL and SHA-1 in every Paper server's config:
+The pack is generated at [`resource-pack/BetterChat-Flags.zip`](resource-pack/BetterChat-Flags.zip). Upload it to a public HTTPS host, then configure it in Paper's `server.properties` (`resource-pack`, `resource-pack-sha1`, and `resource-pack-prompt`) or use BetterChat's `flags.resource-pack` settings. Enable `use-glyphs` after the pack is available to players. BetterChat avoids sending a second prompt when both routes use the same URL. See [Flag pack guide](docs/RESOURCE-PACK.md) for both setups.
 
-```yaml
-flags:
-  resource-pack:
-    enabled: true
-    url: 'https://example.com/BetterChat-Flags.zip'
-    sha1: 'YOUR_40_CHARACTER_SHA1'
-    required: false
-    use-glyphs: true
-```
-
-BetterChat can send the pack to players on join. Country flags use a namespaced Adventure font (`betterchat:flags`); Unicode flag emoji remain the fallback. For other plugins, configure the resource pack's glyph font through that plugin's own font support. Resource-pack source, generation, hosting, and Twemoji attribution are in [Flag pack guide](docs/RESOURCE-PACK.md).
+Country flags use a namespaced Adventure font (`betterchat:flags`); Unicode flag emoji remain the fallback. For other plugins, configure the resource pack's glyph font through that plugin's own font support. Resource-pack source, generation, hosting, and Twemoji attribution are in [Flag pack guide](docs/RESOURCE-PACK.md).
 
 ## Commands
 
@@ -77,13 +67,14 @@ BetterChat can send the pack to players on join. Country flags use a namespaced 
 | --- | --- |
 | `/bc` or `/bc menu` | Open the language and flag menus |
 | `/bc language <language>` | Select a language by code or name, for example `en_us`, `bn`, or `Toki Pona` |
-| `/bc flag <country-code\|earth>` | Select a country or the global Earth flag |
+| `/bc flag <country-code\|country-name\|earth\|global>` | Select a country or the global Earth flag |
+| `/translation <on\|off>` | Choose whether you receive translated chat; off always shows the original |
 | `/translate <target-language> <text>` | Translate one message to a language code or one-word name |
 | `/bc auto [on\|off]` | Toggle IP-based country detection |
 | `/bc set <online-player> <language\|flag> <value>` | Admin change to a player's preference |
 | `/bc reload` | Reload BetterChat configuration |
 
-`betterchat.use` and `betterchat.translate` are granted to everyone by default. `/bc set` and `/bc reload` require `betterchat.admin` (op by default). `/translate` works whenever a provider is configured, even when automatic chat translation is turned off.
+`betterchat.use` and `betterchat.translate` are granted to everyone by default. `/bc set` and `/bc reload` require `betterchat.admin` (op by default). `/translate` works whenever a provider is configured, even when automatic chat translation is turned off. The `/translation` preference is saved per player; opted-out players do not contribute their language to a chat request unless another opted-in recipient needs it.
 
 ## Placeholders
 
@@ -105,7 +96,7 @@ For internal MiniMessage format strings, use `<player>`, `<flag>`, `<global_flag
 
 ## Chat formatting and channels
 
-With no recognized formatter active, BetterChat renders chat using `chat.format` or its built-in format. `chat.flag-position` selects before-name or after-name placement. Owners can set a full MiniMessage format or turn `chat.built-in-format` off.
+With no recognized formatter active, BetterChat renders chat using `chat.format` or its built-in format. `chat.flag-position` selects before-name or after-name placement. These chat settings live in `plugins/BetterChat/ai.yml`. Owners can set a full MiniMessage format or turn `chat.built-in-format` off.
 
 When a configured formatter is detected, BetterChat automatically leaves its format alone and keeps placeholders available. On standalone Paper/Folia, BetterChat can translate through modern Paper `ChatRenderer`s while preserving their per-viewer format. The optional VentureChat adapter listens to VentureChat's public pre-send event and translates its actual **local** channel recipients. This adapter is reflection-based: BetterChat does not bundle VentureChat classes or copy its GPL-3.0 code. VentureChat's own proxy channel relay remains responsible for cross-server delivery; translation for its remote channel recipients is not currently intercepted.
 
@@ -115,9 +106,9 @@ Tab-list decoration is independent of chat formatting. Optional overhead nametag
 
 ## Translation providers
 
-Translation is off by default. Enable `chat.translation-enabled` and add keys under `translation.providers` in `plugins/BetterChat/config.yml`. Provider order, model lists, timeouts, batch window, batch size, and queue capacity are configurable.
+Translation is off by default. Enable `chat.translation-enabled` and add keys under `translation.providers` in `plugins/BetterChat/ai.yml`. Provider order, model lists, timeouts, batch window, batch size, and queue capacity are configurable there; the translation system instruction is fixed in the plugin. On first startup after upgrading, BetterChat moves existing `chat` and `translation` settings from `config.yml` into the new `ai.yml` automatically.
 
-AI providers receive the sender's selected language as a **probable** source-language hint and only the target languages needed by the active recipient batch. The system prompt asks the model to preserve names, commands, URLs, formatting, and placeholders, and allows light Minecraft humor only when it does not alter the meaning. Targets outside Minecraft's locale list are written in Latin letters using conventional romanization. Google Cloud Translation cannot enforce that output script, so BetterChat uses an AI provider for those targets.
+AI providers receive the sender's selected language as a **probable** source-language hint and only the target languages needed by the active recipient batch. BetterChat sends chat-completion text to ordinary text models with a plugin-owned system instruction; Gemini uses its native text-generation API. Busy bursts are coalesced into batches (32 messages by default), sent with IDs, and mapped back from ID-tagged model results. The instruction asks models to preserve names, commands, URLs, formatting, and placeholders. Targets outside Minecraft's locale list are written in Latin letters using conventional romanization.
 
 If an HTTP 429 is returned, BetterChat disables that API key for the remainder of the process lifetime and tries other configured keys/providers. Untranslated recipients can fall back to the original message, controlled by `chat.show-original-on-translation-failure`. Console output includes an original and a configured-language line when the built-in translation path is active.
 

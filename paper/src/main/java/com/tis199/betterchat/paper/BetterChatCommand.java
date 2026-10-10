@@ -52,8 +52,8 @@ final class BetterChatCommand implements CommandExecutor, TabCompleter {
                 menu.openMain(player);
                 return true;
             }
-            if (args.length != 2) return fail(sender, "Usage: /bc flag <country-code>");
-            String country = findCountry(args[1]);
+            if (args.length < 2) return fail(sender, "Usage: /bc flag <country-code|name|earth|global>");
+            String country = findCountry(String.join(" ", java.util.Arrays.copyOfRange(args, 1, args.length)));
             if (country == null || isBlacklisted("flags.blacklist", country)) return fail(sender, "That country is unknown or disabled.");
             Player target = requirePlayer(sender);
             if (target == null) return true;
@@ -107,7 +107,7 @@ final class BetterChatCommand implements CommandExecutor, TabCompleter {
             return true;
         }
         if (args[2].equalsIgnoreCase("flag") || args[2].equalsIgnoreCase("country")) {
-            String country = findCountry(args[3]);
+            String country = findCountry(String.join(" ", java.util.Arrays.copyOfRange(args, 3, args.length)));
             if (country == null || isBlacklisted("flags.blacklist", country)) return fail(sender, "That country is unknown or disabled.");
             plugin.updatePreferences(current.withCountry(country, false));
             plugin.refreshPlayer(target);
@@ -131,6 +131,8 @@ final class BetterChatCommand implements CommandExecutor, TabCompleter {
     }
 
     private String findCountry(String input) {
+        if (input.equalsIgnoreCase("earth") || input.equalsIgnoreCase("global")
+                || input.equalsIgnoreCase("world")) return "EARTH";
         String code = input.toUpperCase(Locale.ROOT);
         if (CountryCatalog.contains(code)) return code;
         return CountryCatalog.all().entrySet().stream()
@@ -149,7 +151,11 @@ final class BetterChatCommand implements CommandExecutor, TabCompleter {
         if (args.length == 2 && (args[0].equalsIgnoreCase("language") || args[0].equalsIgnoreCase("lang")))
             return LanguageCatalog.all().keySet().stream().filter(code -> code.startsWith(args[1].toLowerCase(Locale.ROOT))).limit(60).toList();
         if (args.length == 2 && (args[0].equalsIgnoreCase("flag") || args[0].equalsIgnoreCase("country")))
-            return CountryCatalog.all().keySet().stream().filter(code -> code.startsWith(args[1].toUpperCase(Locale.ROOT))).limit(60).toList();
+            return java.util.stream.Stream.concat(java.util.stream.Stream.of("earth", "global"),
+                            CountryCatalog.all().keySet().stream())
+                    .filter(code -> code.startsWith(args[1].toLowerCase(Locale.ROOT))
+                            || code.startsWith(args[1].toUpperCase(Locale.ROOT)))
+                    .distinct().limit(60).toList();
         if (args.length == 2 && args[0].equalsIgnoreCase("set")) return Bukkit.getOnlinePlayers().stream().map(Player::getName).toList();
         if (args.length == 3 && args[0].equalsIgnoreCase("set")) return List.of("language", "flag");
         return List.of();

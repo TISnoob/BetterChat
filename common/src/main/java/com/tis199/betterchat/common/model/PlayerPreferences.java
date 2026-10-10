@@ -4,11 +4,17 @@ import java.util.Locale;
 import java.util.UUID;
 
 /** Persistent player settings shared by the server and proxy artifacts. */
-public record PlayerPreferences(UUID uniqueId, String language, String country, boolean automaticCountry) {
+public record PlayerPreferences(UUID uniqueId, String language, String country,
+                                boolean automaticCountry, boolean translationEnabled) {
     public PlayerPreferences {
         if (uniqueId == null) throw new IllegalArgumentException("uniqueId is required");
         language = normalizeLanguage(language);
         country = normalizeCountry(country);
+    }
+
+    /** Keeps existing callers source-compatible; translations are enabled by default. */
+    public PlayerPreferences(UUID uniqueId, String language, String country, boolean automaticCountry) {
+        this(uniqueId, language, country, automaticCountry, true);
     }
 
     public static String normalizeLanguage(String language) {
@@ -22,10 +28,14 @@ public record PlayerPreferences(UUID uniqueId, String language, String country, 
     }
 
     public PlayerPreferences withLanguage(String value) {
-        return new PlayerPreferences(uniqueId, value, country, automaticCountry);
+        return new PlayerPreferences(uniqueId, value, country, automaticCountry, translationEnabled);
     }
 
     public PlayerPreferences withCountry(String value, boolean automatic) {
-        return new PlayerPreferences(uniqueId, language, value, automatic);
+        return new PlayerPreferences(uniqueId, language, value, automatic, translationEnabled);
+    }
+
+    public PlayerPreferences withTranslationEnabled(boolean enabled) {
+        return new PlayerPreferences(uniqueId, language, country, automaticCountry, enabled);
     }
 }

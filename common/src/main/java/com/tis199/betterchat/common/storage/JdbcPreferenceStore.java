@@ -45,7 +45,21 @@ public final class JdbcPreferenceStore implements PreferenceStore {
         try (Connection connection = dataSource.getConnection(); Statement statement = connection.createStatement()) {
             statement.executeUpdate("CREATE TABLE IF NOT EXISTS betterchat_users ("
                     + "uuid VARCHAR(36) PRIMARY KEY, language VARCHAR(128) NOT NULL, "
-                    + "country VARCHAR(8) NOT NULL, automatic_country BOOLEAN NOT NULL)");
+                    + "country VARCHAR(8) NOT NULL, automatic_country BOOLEAN NOT NULL, "
+                    + "translation_enabled BOOLEAN NOT NULL DEFAULT TRUE)");
+        }
+        try (Connection connection = dataSource.getConnection()) {
+            if (!hasColumn(connection, "translation_enabled")) {
+                try (Statement statement = connection.createStatement()) {
+                    try {
+                        statement.executeUpdate("ALTER TABLE betterchat_users ADD COLUMN "
+                                + "translation_enabled BOOLEAN NOT NULL DEFAULT TRUE");
+                    } catch (SQLException exception) {
+                        // Multiple proxy backends can race through this one-time migration.
+                        if (!hasColumn(connection, "translation_enabled")) throw exception;
+                    }
+                }
+            }
         }
         if (dataSource.getJdbcUrl().startsWith("jdbc:mariadb:")) {
             try (Connection connection = dataSource.getConnection()) {
@@ -68,16 +82,25 @@ public final class JdbcPreferenceStore implements PreferenceStore {
         }
     }
 
+    private static boolean hasColumn(Connection connection, String columnName) throws SQLException {
+        try (ResultSet columns = connection.getMetaData().getColumns(null, null,
+                "betterchat_users", columnName)) {
+            return columns.next();
+        }
+    }
+
     @Override
     public CompletableFuture<Optional<PlayerPreferences>> load(UUID uniqueId) {
         return CompletableFuture.supplyAsync(() -> {
             try (Connection connection = dataSource.getConnection();
                  PreparedStatement statement = connection.prepareStatement(
-                         "SELECT language, country, automatic_country FROM betterchat_users WHERE uuid = ?")) {
+                         "SELECT language, country, automatic_country, translation_enabled "
+                                 + "FROM betterchat_users WHERE uuid = ?")) {
                 statement.setString(1, uniqueId.toString());
                 try (ResultSet rows = statement.executeQuery()) {
                     if (!rows.next()) return Optional.empty();
-                    return Optional.of(new PlayerPreferences(uniqueId, rows.getString(1), rows.getString(2), rows.getBoolean(3)));
+                    return Optional.of(new PlayerPreferences(uniqueId, rows.getString(1), rows.getString(2),
+                            rows.getBoolean(3), rows.getBoolean(4)));
                 }
             } catch (SQLException exception) {
                 throw new IllegalStateException("Could not load BetterChat preferences", exception);
@@ -88,20 +111,25 @@ public final class JdbcPreferenceStore implements PreferenceStore {
     @Override
     public CompletableFuture<Void> save(PlayerPreferences preferences) {
         return CompletableFuture.runAsync(() -> {
-            String sql = "INSERT INTO betterchat_users(uuid, language, country, automatic_country) VALUES(?, ?, ?, ?) "
+            String sql = "INSERT INTO betterchat_users(uuid, language, country, automatic_country, translation_enabled) "
+                    + "VALUES(?, ?, ?, ?, ?) "
                     + "ON CONFLICT(uuid) DO UPDATE SET language=excluded.language, country=excluded.country, "
-                    + "automatic_country=excluded.automatic_country";
+                    + "automatic_country=excluded.automatic_country, "
+                    + "translation_enabled=excluded.translation_enabled";
             // MariaDB uses a different upsert clause; select it from the configured JDBC URL.
             if (dataSource.getJdbcUrl().startsWith("jdbc:mariadb:")) {
-                sql = "INSERT INTO betterchat_users(uuid, language, country, automatic_country) VALUES(?, ?, ?, ?) "
+                sql = "INSERT INTO betterchat_users(uuid, language, country, automatic_country, translation_enabled) "
+                        + "VALUES(?, ?, ?, ?, ?) "
                         + "ON DUPLICATE KEY UPDATE language=VALUES(language), country=VALUES(country), "
-                        + "automatic_country=VALUES(automatic_country)";
+                        + "automatic_country=VALUES(automatic_country), "
+                        + "translation_enabled=VALUES(translation_enabled)";
             }
             try (Connection connection = dataSource.getConnection(); PreparedStatement statement = connection.prepareStatement(sql)) {
                 statement.setString(1, preferences.uniqueId().toString());
                 statement.setString(2, preferences.language());
                 statement.setString(3, preferences.country());
                 statement.setBoolean(4, preferences.automaticCountry());
+                statement.setBoolean(5, preferences.translationEnabled());
                 statement.executeUpdate();
             } catch (SQLException exception) {
                 throw new IllegalStateException("Could not save BetterChat preferences", exception);

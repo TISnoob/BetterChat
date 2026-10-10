@@ -33,16 +33,19 @@ def glyph_for(code: str) -> str:
 
 
 def make_earth_flag(path: Path) -> None:
-    """Create a rectangular blue-and-green Earth flag using only the Python standard library."""
-    width, height, scale = 72, 48, 3
+    """Create a centered 3:2 Earth flag in a square glyph canvas."""
+    width, height, scale = 48, 48, 3
+    flag_height, flag_top = 32, 8
     high_width, high_height = width * scale, height * scale
-    pixels: list[list[tuple[int, int, int, int]]] = []
-    for y in range(high_height):
-        shade = y / max(1, high_height - 1)
+    transparent = (0, 0, 0, 0)
+    pixels: list[list[tuple[int, int, int, int]]] = [[transparent] * high_width for _ in range(high_height)]
+    for y in range(flag_top * scale, (flag_top + flag_height) * scale):
+        shade = (y / scale - flag_top) / max(1, flag_height - 1)
         ocean = (22, 111 + round(shade * 22), 183 + round(shade * 17), 255)
-        pixels.append([ocean] * high_width)
+        pixels[y] = [ocean] * high_width
 
     def polygon(points: tuple[tuple[float, float], ...], color: tuple[int, int, int, int]) -> None:
+        points = tuple((x * 2 / 3, y * 2 / 3 + flag_top) for x, y in points)
         top = max(0, math.floor(min(y for _, y in points) * scale))
         bottom = min(high_height, math.ceil(max(y for _, y in points) * scale))
         for py in range(top, bottom):
