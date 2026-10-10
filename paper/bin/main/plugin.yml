@@ -1,0 +1,26 @@
+name: BetterChat
+version: '${version}'
+main: com.tis199.betterchat.paper.BetterChatPaperPlugin
+api-version: '26.2'
+folia-supported: true
+authors: [TIS199]
+description: Recipient-aware translated chat and country flags.
+softdepend: [PlaceholderAPI, LuckPerms, Vault, VentureChat, Essentials, EssentialsChat, ChatControl, LPC, TAB]
+commands:
+  bc:
+    description: Open BetterChat settings or change your language and flag.
+    usage: /bc [menu|language|flag|auto|set|reload]
+    aliases: [betterchat]
+  translate:
+    description: Translate text into a selected language.
+    usage: /translate <target-language> <text>
+  translation:
+    description: Choose whether chat is translated for you.
+    usage: /translation <on|off>
+permissions:
+  betterchat.use:
+    default: true
+  betterchat.admin:
+    default: op
+  betterchat.translate:
+    default: true

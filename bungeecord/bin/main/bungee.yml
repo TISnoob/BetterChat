@@ -1,0 +1,5 @@
+name: BetterChat
+main: com.tis199.betterchat.bungee.BetterChatBungeePlugin
+version: '${version}'
+author: TIS199
+description: Shared preference and chat support for BetterChat proxy mode.
