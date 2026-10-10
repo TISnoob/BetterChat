@@ -18,7 +18,7 @@ import org.slf4j.Logger;
 
 import java.nio.file.Path;
 
-@Plugin(id = "betterchat", name = "BetterChat", version = "0.1.0-SNAPSHOT",
+@Plugin(id = "betterchat", name = "BetterChat", version = "0.1.0-pre.1",
         description = "Shared preference and chat support for BetterChat proxy mode.", authors = {"TIS199"})
 public final class BetterChatVelocityPlugin {
     private static final int BSTATS_PLUGIN_ID = 34610;

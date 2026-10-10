@@ -43,7 +43,7 @@ PlaceholderAPI, LuckPerms, Vault, and VentureChat are optional integrations. Bet
 
 ### One Paper or Folia server
 
-1. Download `BetterChat-Paper-0.1.0-SNAPSHOT.jar` from the build outputs or build it with Gradle.
+1. Download `BetterChat-Paper-0.1.0-pre.1.jar` from the pre-release assets or build it with Gradle.
 2. Put it in `plugins/` and start the server once.
 3. Edit `plugins/BetterChat/config.yml` for storage and flags. Keep `proxy-mode.enabled: false` and `storage.type: sqlite` for a standalone server.
 4. Edit `plugins/BetterChat/ai.yml` for chat behavior and AI provider keys. Enable `chat.translation-enabled` if you want chat translated, then restart.
@@ -123,9 +123,9 @@ See [Translation setup and provider examples](docs/TRANSLATION.md). Provider API
 This compiles the three plugin jars and regenerates the flag pack. Outputs:
 
 ```text
-paper/build/libs/BetterChat-Paper-0.1.0-SNAPSHOT.jar
-bungeecord/build/libs/BetterChat-BungeeCord-0.1.0-SNAPSHOT.jar
-velocity/build/libs/BetterChat-Velocity-0.1.0-SNAPSHOT.jar
+paper/build/libs/BetterChat-Paper-0.1.0-pre.1.jar
+bungeecord/build/libs/BetterChat-BungeeCord-0.1.0-pre.1.jar
+velocity/build/libs/BetterChat-Velocity-0.1.0-pre.1.jar
 resource-pack/BetterChat-Flags.zip
 ```
 
