@@ -17,7 +17,7 @@
 
 **BetterChat** translates player chat into each listener's chosen language and shows a country flag beside player names. Players who speak different languages can share one chat, and everyone reads it in their own. It runs its own chat format when no formatter is active, or exposes placeholders and a VentureChat listener adapter when another chat plugin owns formatting.
 
-> **Pre-release 0.1.0-pre.1.** Please test on a staging server and keep backups of your configs. Feedback shapes the first stable release.
+
 
 ## Screenshots
 
@@ -93,7 +93,7 @@ Install the matching proxy jar on the proxy and the Paper jar on **every backend
 
 Flags look best with the included resource pack: **249 country flags and a rectangular Earth flag**, drawn as crisp glyphs in the `betterchat:flags` font from Twemoji artwork. The pack is optional. Without it, BetterChat falls back to Unicode flag emoji, and the flag buttons in the menus show emoji instead of glyphs.
 
-The pack is generated at [`resource-pack/BetterChat-Flags.zip`](resource-pack/BetterChat-Flags.zip) and shipped as `BetterChat-Flags-0.1.0-pre.1.zip` in the release assets.
+The pack is generated at [`resource-pack/BetterChat-Flags.zip`](resource-pack/BetterChat-Flags.zip) and shipped as `BetterChat-Flags-*.zip` in the release assets.
 
 - Download `BetterChat-Flags-0.1.0-pre.1.zip` from the release assets. Its SHA-1 is in `RESOURCE-PACK-SHA1.txt` in the same bundle.
 - Upload the ZIP to a **public HTTPS URL** that returns the file directly. A file path on your server is not enough.
