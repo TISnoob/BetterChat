@@ -79,7 +79,7 @@ PlaceholderAPI, LuckPerms, Vault and VentureChat are optional integrations.
 
 ### One Paper or Folia server
 
-1. Download `BetterChat-Paper-0.1.0-pre.1.jar` from the [releases](../../releases) or build it with Gradle.
+1. Download `BetterChat-Paper-*.jar` from the [releases](../../releases) or build it with Gradle.
 2. Put it in `plugins/` and start the server once.
 3. Edit `plugins/BetterChat/config.yml` for storage and flags. Keep `proxy-mode.enabled: false` and `storage.type: sqlite` for a standalone server.
 4. Edit `plugins/BetterChat/ai.yml` for chat behavior and AI provider keys. Enable `chat.translation-enabled` if you want chat translated, then restart.
