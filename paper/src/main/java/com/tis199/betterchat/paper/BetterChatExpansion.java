@@ -16,9 +16,9 @@ public final class BetterChatExpansion extends PlaceholderExpansion {
 
     @Override
     public String onPlaceholderRequest(Player player, String parameter) {
-        if (player == null) return "";
+        if (player == null || parameter == null) return "";
         PlayerPreferences selected = plugin.preferences().get(player.getUniqueId());
-        return switch (parameter.toLowerCase()) {
+        return switch (parameter.toLowerCase(java.util.Locale.ROOT)) {
             case "flag", "player_flag" -> CountryCatalog.flag(selected.country());
             case "flag_glyph", "player_flag_glyph" -> CountryCatalog.glyph(selected.country());
             case "global_flag", "earth_flag" -> CountryCatalog.flag("EARTH");

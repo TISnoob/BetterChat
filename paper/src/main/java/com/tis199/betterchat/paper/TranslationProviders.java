@@ -40,12 +40,13 @@ final class TranslationProviders {
                 default -> "gpt-4.1-mini";
             };
             if (models.isEmpty()) models = List.of(config.string(root + ".model", defaultModel));
-            int index = 0;
+            int keyIndex = 0;
             for (String key : keys) {
                 if (!id.equals("ollama") && key.isBlank()) continue;
-                String keyId = id + "-" + (++index);
+                keyIndex++;
                 if (id.equals("gemini")) {
                     for (String model : models) {
+                        String keyId = id + "-" + keyIndex + ":" + model;
                         providers.add(new GeminiTextProvider(keyId, model, key, timeout, temperature));
                     }
                 } else {
@@ -57,6 +58,7 @@ final class TranslationProviders {
                         default -> "https://api.openai.com/v1";
                     };
                     for (String model : models) {
+                        String keyId = id + "-" + keyIndex + ":" + model;
                         if (id.equals("anthropic")) providers.add(new AnthropicProvider(keyId, model, key,
                                 timeout, temperature));
                         else providers.add(new OpenAiCompatibleProvider(id, keyId,

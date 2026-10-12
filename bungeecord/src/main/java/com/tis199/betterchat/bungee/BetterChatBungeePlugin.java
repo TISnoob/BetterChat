@@ -4,6 +4,7 @@ import com.tis199.betterchat.common.config.YamlConfig;
 import com.tis199.betterchat.common.storage.JdbcPreferenceStore;
 import com.tis199.betterchat.common.storage.PreferenceStore;
 import com.tis199.betterchat.common.model.ProxyChatMessage;
+import com.tis199.betterchat.common.update.ReleaseUpdateChecker;
 import net.md_5.bungee.api.plugin.Plugin;
 import net.md_5.bungee.api.plugin.Listener;
 import net.md_5.bungee.event.EventHandler;
@@ -38,6 +39,9 @@ public final class BetterChatBungeePlugin extends Plugin implements Listener {
                     config.string("storage.mariadb.password", ""), config.integer("storage.mariadb.pool-size", 8));
             getProxy().registerChannel(CHANNEL);
             getProxy().getPluginManager().registerListener(this, this);
+            if (config.bool("update-check.enabled", true)) {
+                ReleaseUpdateChecker.check(getDescription().getVersion(), getLogger()::info, getLogger()::warning);
+            }
             if (config.bool("bstats.enabled", true)) new Metrics(this, BSTATS_PLUGIN_ID);
             getLogger().info("Proxy mode is ready; player preferences are shared through MariaDB.");
         } catch (Exception exception) {

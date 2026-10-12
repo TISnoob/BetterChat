@@ -103,9 +103,19 @@ public final class OpenAiCompatibleProvider implements TranslationProvider {
         JsonObject root = parseObject(response);
         JsonObject translations = root.getAsJsonObject("translations");
         if (translations == null) throw new IllegalArgumentException("Missing translations object");
+        java.util.Map<String, JsonArray> normalizedTranslations = new java.util.HashMap<>();
+        for (String key : translations.keySet()) {
+            if (translations.get(key).isJsonArray()) {
+                normalizedTranslations.put(normalizeLanguageKey(key), translations.getAsJsonArray(key));
+            }
+        }
         java.util.Map<String, List<String>> result = new java.util.LinkedHashMap<>();
         for (String target : targets) {
-            JsonArray rows = translations.getAsJsonArray(target);
+            String norm = normalizeLanguageKey(target);
+            JsonArray rows = normalizedTranslations.get(norm);
+            if (rows == null && translations.has(target) && translations.get(target).isJsonArray()) {
+                rows = translations.getAsJsonArray(target);
+            }
             if (rows == null || rows.size() != expectedCount) throw new IllegalArgumentException("Missing translation rows for " + target);
             String[] translated = new String[expectedCount];
             for (int rowIndex = 0; rowIndex < rows.size(); rowIndex++) {
@@ -205,5 +215,10 @@ public final class OpenAiCompatibleProvider implements TranslationProvider {
             }
         } catch (RuntimeException ignored) { }
         return "";
+    }
+
+    private static String normalizeLanguageKey(String key) {
+        if (key == null) return "";
+        return key.trim().toLowerCase(java.util.Locale.ROOT).replace('-', '_');
     }
 }

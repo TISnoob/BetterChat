@@ -18,7 +18,7 @@ OUTPUT = ROOT / "BetterChat-Flags.zip"
 
 def country_codes() -> list[str]:
     result = subprocess.run(
-        ["java", "--source", "25", str(ROOT / "tools" / "PrintCountryCodes.java")],
+        ["java", str(ROOT / "tools" / "PrintCountryCodes.java")],
         check=True,
         capture_output=True,
         text=True,
@@ -29,6 +29,8 @@ def country_codes() -> list[str]:
 def glyph_for(code: str) -> str:
     if code == "EARTH":
         return chr(0xE6FF)
+    if code == "ZZ":
+        return chr(0xE6FE)
     return chr(0xE000 + (ord(code[0]) - ord("A")) * 26 + ord(code[1]) - ord("A"))
 
 
@@ -135,6 +137,10 @@ def make_pack() -> None:
     providers.append({
         "type": "bitmap", "file": "betterchat:flags/earth.png", "ascent": 7, "height": 8,
         "chars": [glyph_for("EARTH")],
+    })
+    providers.append({
+        "type": "bitmap", "file": "betterchat:flags/earth.png", "ascent": 7, "height": 8,
+        "chars": [glyph_for("ZZ")],
     })
 
     (SOURCE / "assets" / "betterchat" / "font").mkdir(parents=True, exist_ok=True)

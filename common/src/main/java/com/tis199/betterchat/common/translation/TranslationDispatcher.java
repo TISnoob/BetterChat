@@ -36,20 +36,31 @@ public final class TranslationDispatcher {
             List<String> messages, List<String> targetLanguages, String probableSourceLanguage) {
         if (providers.isEmpty()) return CompletableFuture.failedFuture(new IllegalStateException("No translation provider is configured"));
         boolean needsLatinScript = targetLanguages.stream().anyMatch(LanguageCatalog::requiresLatinScript);
-        int first = nextActive(0, needsLatinScript);
+        int first = nextActive(cursor.getAndIncrement(), needsLatinScript);
         if (first < 0) return CompletableFuture.failedFuture(new IllegalStateException(needsLatinScript
                 ? "No active AI translation provider can transliterate the requested language into Latin script"
                 : "All configured API keys are disabled"));
+
+        Map<String, Map<String, String>> initialHits = new java.util.HashMap<>();
         Set<String> uniqueMissing = new LinkedHashSet<>();
         for (String message : messages) {
-            boolean complete = targetLanguages.stream().allMatch(target -> cached(message, target, probableSourceLanguage) != null);
-            if (!complete) uniqueMissing.add(message);
+            Map<String, String> targetHits = new java.util.HashMap<>();
+            for (String target : targetLanguages) {
+                String hit = cached(message, target, probableSourceLanguage);
+                if (hit != null) {
+                    targetHits.put(target, hit);
+                } else {
+                    uniqueMissing.add(message);
+                }
+            }
+            initialHits.put(message, targetHits);
         }
+
         CompletableFuture<Map<String, List<String>>> fresh;
-        if (uniqueMissing.isEmpty()) {
+        List<String> missing = List.copyOf(uniqueMissing);
+        if (missing.isEmpty()) {
             fresh = CompletableFuture.completedFuture(Map.of());
         } else {
-            List<String> missing = List.copyOf(uniqueMissing);
             fresh = tryProvider(first, missing, targetLanguages, probableSourceLanguage, needsLatinScript, 0).thenApply(result -> {
                 long expiresAt = System.currentTimeMillis() + CACHE_TTL_MILLIS;
                 for (String target : targetLanguages) {
@@ -64,12 +75,29 @@ public final class TranslationDispatcher {
                 return result;
             });
         }
-        return fresh.thenApply(ignored -> {
+
+        return fresh.thenApply(freshResult -> {
+            Map<String, Integer> missingIndexMap = new java.util.HashMap<>();
+            for (int i = 0; i < missing.size(); i++) {
+                missingIndexMap.put(missing.get(i), i);
+            }
+
             Map<String, List<String>> assembled = new java.util.LinkedHashMap<>();
             for (String target : targetLanguages) {
                 List<String> rows = new ArrayList<>(messages.size());
+                List<String> freshRows = freshResult.get(target);
                 for (String message : messages) {
-                    String value = cached(message, target, probableSourceLanguage);
+                    Map<String, String> cachedForMsg = initialHits.get(message);
+                    String value = cachedForMsg != null ? cachedForMsg.get(target) : null;
+                    if (value == null && freshRows != null && missingIndexMap.containsKey(message)) {
+                        int idx = missingIndexMap.get(message);
+                        if (idx < freshRows.size()) {
+                            value = freshRows.get(idx);
+                        }
+                    }
+                    if (value == null) {
+                        value = cached(message, target, probableSourceLanguage);
+                    }
                     if (value == null) throw new IllegalStateException("A translation was not returned for " + target);
                     rows.add(value);
                 }
@@ -96,7 +124,15 @@ public final class TranslationDispatcher {
         if (cache.size() <= CACHE_LIMIT) return;
         long now = System.currentTimeMillis();
         cache.entrySet().removeIf(entry -> entry.getValue().expiresAtMillis() < now);
-        if (cache.size() > CACHE_LIMIT) cache.clear();
+        if (cache.size() > CACHE_LIMIT) {
+            var iterator = cache.keySet().iterator();
+            int toRemove = cache.size() - CACHE_LIMIT;
+            while (toRemove > 0 && iterator.hasNext()) {
+                iterator.next();
+                iterator.remove();
+                toRemove--;
+            }
+        }
     }
 
     private CompletableFuture<Map<String, List<String>>> tryProvider(
@@ -144,9 +180,10 @@ public final class TranslationDispatcher {
 
     private int nextActive(int from, boolean needsLatinScript) {
         if (providers.isEmpty()) return -1;
-        int start = Math.floorMod(from + Math.floorMod(cursor.getAndIncrement(), providers.size()), providers.size());
-        for (int offset = 0; offset < providers.size(); offset++) {
-            int index = (start + offset) % providers.size();
+        int size = providers.size();
+        int normalized = Math.floorMod(from, size);
+        for (int offset = 0; offset < size; offset++) {
+            int index = (normalized + offset) % size;
             TranslationProvider provider = providers.get(index);
             if (!disabledKeys.containsKey(provider.keyId())
                     && (!needsLatinScript || provider.supportsLatinScriptOutput())) return index;

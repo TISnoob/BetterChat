@@ -42,7 +42,7 @@ public final class AnthropicProvider implements TranslationProvider {
             List<String> messages, List<String> targetLanguages, String probableSourceLanguage) {
         JsonObject body = new JsonObject();
         body.addProperty("model", model);
-        body.addProperty("max_tokens", Math.max(512, messages.size() * 180));
+        body.addProperty("max_tokens", Math.min(8192, Math.max(512, messages.size() * targetLanguages.size() * 220)));
         body.addProperty("temperature", temperature);
         body.addProperty("system", TranslationPrompt.render(targetLanguages, probableSourceLanguage, messages.size()));
         JsonArray contents = new JsonArray();

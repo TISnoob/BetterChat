@@ -9,6 +9,7 @@ import com.tis199.betterchat.common.storage.PreferenceStore;
 import com.tis199.betterchat.common.translation.TranslationBatchQueue;
 import com.tis199.betterchat.common.translation.TranslationDispatcher;
 import com.tis199.betterchat.common.translation.TranslationProvider;
+import com.tis199.betterchat.common.update.ReleaseUpdateChecker;
 import org.bstats.bukkit.Metrics;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
@@ -89,6 +90,10 @@ public final class BetterChatPaperPlugin extends JavaPlugin implements Listener,
 
         if (Bukkit.getPluginManager().isPluginEnabled("PlaceholderAPI")) {
             new BetterChatExpansion(this).register();
+        }
+        if (settings.bool("update-check.enabled", true)
+                && !settings.bool("proxy-mode.enabled", false)) {
+            ReleaseUpdateChecker.check(getDescription().getVersion(), getLogger()::info, getLogger()::warning);
         }
         if (settings.bool("bstats.enabled", true)) new Metrics(this, BSTATS_PLUGIN_ID);
         getLogger().info("Enabled. Proxy mode is " + (settings.bool("proxy-mode.enabled", false) ? "on" : "off") + ".");
@@ -448,8 +453,8 @@ public final class BetterChatPaperPlugin extends JavaPlugin implements Listener,
         if (serverPackUrl != null && serverPackUrl.trim().equals(url)) return;
         try {
             String sha1 = settings.string("flags.resource-pack.sha1", "").trim();
-            byte[] hash = sha1.isEmpty() ? new byte[0] : java.util.HexFormat.of().parseHex(sha1);
-            if (hash.length != 0 && hash.length != 20) {
+            byte[] hash = sha1.isEmpty() ? null : java.util.HexFormat.of().parseHex(sha1);
+            if (hash != null && hash.length != 20) {
                 throw new IllegalArgumentException("SHA-1 must contain exactly 40 hexadecimal characters");
             }
             String prompt = settings.string("flags.resource-pack.prompt", "Install BetterChat Flags to see country flags.");
@@ -475,12 +480,24 @@ public final class BetterChatPaperPlugin extends JavaPlugin implements Listener,
         YamlConfig nextSettings = loadEffectiveSettings();
         PreferenceStore nextStore = openStore(nextSettings);
         PreferenceStore oldStore = store;
+        YamlConfig oldSettings = settings;
         TranslationBatchQueue oldTranslations = translations;
         store = nextStore;
         settings = nextSettings;
         createServices();
         oldTranslations.close();
         oldStore.close();
+
+        boolean wasProxy = oldSettings != null && oldSettings.bool("proxy-mode.enabled", false);
+        boolean nowProxy = nextSettings.bool("proxy-mode.enabled", false);
+        if (!wasProxy && nowProxy) {
+            getServer().getMessenger().registerOutgoingPluginChannel(this, PROXY_CHANNEL);
+            getServer().getMessenger().registerIncomingPluginChannel(this, PROXY_CHANNEL, this);
+        } else if (wasProxy && !nowProxy) {
+            getServer().getMessenger().unregisterIncomingPluginChannel(this, PROXY_CHANNEL, this);
+            getServer().getMessenger().unregisterOutgoingPluginChannel(this, PROXY_CHANNEL);
+        }
+
         getServer().getGlobalRegionScheduler().execute(this, () -> {
             for (Player player : getServer().getOnlinePlayers()) {
                 preferences.load(player, loaded -> refreshPlayer(player));
@@ -492,6 +509,14 @@ public final class BetterChatPaperPlugin extends JavaPlugin implements Listener,
     public void onDisable() {
         getServer().getMessenger().unregisterIncomingPluginChannel(this, PROXY_CHANNEL, this);
         getServer().getMessenger().unregisterOutgoingPluginChannel(this, PROXY_CHANNEL);
+        try {
+            Scoreboard scoreboard = Bukkit.getScoreboardManager().getMainScoreboard();
+            for (Team team : scoreboard.getTeams()) {
+                if (team.getName().startsWith("bc") && team.getName().length() == 16) {
+                    team.unregister();
+                }
+            }
+        } catch (RuntimeException ignored) { }
         if (translations != null) translations.close();
         if (store != null) store.close();
     }

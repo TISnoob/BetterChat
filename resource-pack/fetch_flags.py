@@ -16,7 +16,7 @@ BASE = "https://raw.githubusercontent.com/twitter/twemoji/master/assets/72x72"
 
 def codes() -> list[str]:
     result = subprocess.run(
-        ["java", "--source", "25", str(ROOT / "tools" / "PrintCountryCodes.java")],
+        ["java", str(ROOT / "tools" / "PrintCountryCodes.java")],
         check=True,
         capture_output=True,
         text=True,

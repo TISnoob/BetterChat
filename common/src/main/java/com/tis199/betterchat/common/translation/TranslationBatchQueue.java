@@ -45,33 +45,42 @@ public final class TranslationBatchQueue implements AutoCloseable {
     private void flush() {
         if (closed) return;
         List<Job> jobs = new ArrayList<>(batchSize);
-        queue.drainTo(jobs, batchSize);
-        if (jobs.isEmpty()) return;
-        Map<BatchKey, List<Job>> groups = new java.util.LinkedHashMap<>();
-        for (Job job : jobs) {
-            BatchKey key = new BatchKey(job.targets(), job.sourceHint());
-            groups.computeIfAbsent(key, ignored -> new ArrayList<>()).add(job);
-        }
-        groups.forEach((key, batchJobs) -> {
-            List<String> texts = batchJobs.stream().map(Job::original).toList();
-            dispatcher.translate(texts, List.copyOf(key.targets()), key.sourceHint()).whenComplete((batch, failure) -> {
-                for (int index = 0; index < batchJobs.size(); index++) {
-                    Job job = batchJobs.get(index);
-                    Map<String, String> translations = new java.util.LinkedHashMap<>();
-                    if (failure == null) {
-                        for (String target : job.targets()) {
-                            List<String> rows = batch.get(target);
-                            if (rows != null && rows.size() > index) translations.put(target, rows.get(index));
+        try {
+            queue.drainTo(jobs, batchSize);
+            if (jobs.isEmpty()) return;
+            Map<BatchKey, List<Job>> groups = new java.util.LinkedHashMap<>();
+            for (Job job : jobs) {
+                BatchKey key = new BatchKey(job.targets(), job.sourceHint());
+                groups.computeIfAbsent(key, ignored -> new ArrayList<>()).add(job);
+            }
+            groups.forEach((key, batchJobs) -> {
+                List<String> texts = batchJobs.stream().map(Job::original).toList();
+                dispatcher.translate(texts, List.copyOf(key.targets()), key.sourceHint()).whenComplete((batch, failure) -> {
+                    for (int index = 0; index < batchJobs.size(); index++) {
+                        Job job = batchJobs.get(index);
+                        Map<String, String> translations = new java.util.LinkedHashMap<>();
+                        if (failure == null) {
+                            for (String target : job.targets()) {
+                                List<String> rows = batch.get(target);
+                                if (rows != null && rows.size() > index) translations.put(target, rows.get(index));
+                            }
+                        }
+                        try {
+                            job.callback().accept(new Result(job.original(), Map.copyOf(translations)));
+                        } catch (RuntimeException ignored) {
+                            // One platform callback must not prevent the rest of a batch from completing.
                         }
                     }
-                    try {
-                        job.callback().accept(new Result(job.original(), Map.copyOf(translations)));
-                    } catch (RuntimeException ignored) {
-                        // One platform callback must not prevent the rest of a batch from completing.
-                    }
-                }
+                });
             });
-        });
+        } catch (Throwable throwable) {
+            for (Job job : jobs) {
+                try {
+                    job.callback().accept(new Result(job.original(), Map.of()));
+                } catch (RuntimeException ignored) {
+                }
+            }
+        }
     }
 
     @Override

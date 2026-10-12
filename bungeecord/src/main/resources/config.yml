@@ -11,5 +11,7 @@ storage:
     username: betterchat
     password: change-me
     pool-size: 8
+update-check:
+  enabled: true
 bstats:
   enabled: true

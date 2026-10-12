@@ -1,6 +1,6 @@
 # Configuration reference
 
-Paper's general settings live at `plugins/BetterChat/config.yml`; chat behavior, translation providers, and AI prompts live at `plugins/BetterChat/ai.yml`. On first startup after upgrading, BetterChat migrates the old `chat` and `translation` sections into `ai.yml`. The BungeeCord and Velocity configs contain proxy mode, MariaDB, and bStats settings. YAML strings containing passwords, URLs, MiniMessage, or provider keys should be quoted when they contain `:` or `#`.
+Paper's general settings live at `plugins/BetterChat/config.yml`; chat behavior, translation providers, and AI prompts live at `plugins/BetterChat/ai.yml`. On first startup after upgrading, BetterChat migrates the old `chat` and `translation` sections into `ai.yml`. The BungeeCord and Velocity configs contain proxy mode, MariaDB, update-check, and bStats settings. YAML strings containing passwords, URLs, MiniMessage, or provider keys should be quoted when they contain `:` or `#`.
 
 ## Storage and proxy
 
@@ -63,6 +63,7 @@ All `chat.*` options and `translation.*` options are in `plugins/BetterChat/ai.y
 | --- | --- | --- |
 | `language.blacklist` | `[]` | Language codes or names hidden from selection and command validation. |
 
-## Metrics
+## Updates and metrics
 
+| `update-check.enabled` | `true` | Check GitHub's latest stable release at startup and log an update reminder to the console when a newer version is available. Paper checks only in standalone mode; in proxy mode the proxy performs the check. Requires an internet connection; set to `false` to disable. |
 | `bstats.enabled` | `true` | Enable anonymous bStats metrics for this platform. |

@@ -2,6 +2,7 @@ package com.tis199.betterchat.velocity;
 
 import com.google.inject.Inject;
 import com.tis199.betterchat.common.config.YamlConfig;
+import com.tis199.betterchat.common.update.ReleaseUpdateChecker;
 import com.tis199.betterchat.common.storage.JdbcPreferenceStore;
 import com.tis199.betterchat.common.storage.PreferenceStore;
 import com.tis199.betterchat.common.model.ProxyChatMessage;
@@ -18,7 +19,7 @@ import org.slf4j.Logger;
 
 import java.nio.file.Path;
 
-@Plugin(id = "betterchat", name = "BetterChat", version = "0.1.0-pre.1",
+@Plugin(id = "betterchat", name = "BetterChat", version = "1.1.3",
         description = "Shared preference and chat support for BetterChat proxy mode.", authors = {"TIS199"})
 public final class BetterChatVelocityPlugin {
     private static final int BSTATS_PLUGIN_ID = 34610;
@@ -61,6 +62,15 @@ public final class BetterChatVelocityPlugin {
                     config.string("storage.mariadb.password", ""), config.integer("storage.mariadb.pool-size", 8));
             server.getChannelRegistrar().register(CHANNEL);
             server.getEventManager().register(this, this);
+            if (config.bool("update-check.enabled", true)) {
+                server.getPluginManager().getPlugin("betterchat")
+                        .flatMap(plugin -> plugin.getDescription().getVersion())
+                        .ifPresentOrElse(
+                                version -> ReleaseUpdateChecker.check(version, logger::info,
+                                        message -> logger.warn(message)),
+                                () -> logger.warn("Could not check BetterChat releases on GitHub: "
+                                        + "the installed plugin version is unavailable."));
+            }
             if (config.bool("bstats.enabled", true)) metricsFactory.make(this, BSTATS_PLUGIN_ID);
             logger.info("BetterChat proxy mode is ready; player preferences are shared through MariaDB.");
         } catch (Exception exception) {

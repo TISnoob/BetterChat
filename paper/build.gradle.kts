@@ -22,12 +22,14 @@ tasks.processResources {
 tasks.shadowJar {
     archiveBaseName.set("BetterChat-Paper")
     archiveClassifier.set("")
+    dependencies {
+        exclude(dependency("org.xerial:sqlite-jdbc"))
+        exclude(dependency("org.mariadb.jdbc:mariadb-java-client"))
+        exclude(dependency("com.zaxxer:HikariCP"))
+        exclude(dependency("com.google.code.gson:gson"))
+        exclude(dependency("org.yaml:snakeyaml"))
+    }
     relocate("org.bstats", "${project.group}.lib.bstats")
-    relocate("com.zaxxer.hikari", "${project.group}.lib.hikari")
-    relocate("org.sqlite", "${project.group}.lib.sqlite")
-    relocate("org.mariadb", "${project.group}.lib.mariadb")
-    relocate("com.google.gson", "${project.group}.lib.gson")
-    relocate("org.yaml.snakeyaml", "${project.group}.lib.snakeyaml")
     mergeServiceFiles()
     exclude("META-INF/*.SF", "META-INF/*.DSA", "META-INF/*.RSA")
 }

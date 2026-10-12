@@ -22,7 +22,6 @@ tasks.shadowJar {
     archiveClassifier.set("")
     relocate("org.bstats", "${project.group}.lib.bstats")
     relocate("com.zaxxer.hikari", "${project.group}.lib.hikari")
-    relocate("org.sqlite", "${project.group}.lib.sqlite")
     relocate("org.mariadb", "${project.group}.lib.mariadb")
     relocate("com.google.gson", "${project.group}.lib.gson")
     relocate("org.yaml.snakeyaml", "${project.group}.lib.snakeyaml")

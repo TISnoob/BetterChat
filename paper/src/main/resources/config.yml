@@ -51,5 +51,8 @@ groups:
 language:
   blacklist: []
 
+update-check:
+  enabled: true
+
 bstats:
   enabled: true

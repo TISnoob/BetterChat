@@ -3,7 +3,7 @@ plugins {
 }
 
 group = "com.tis199.betterchat"
-version = "0.1.0-pre.1"
+version = "1.1.3"
 
 allprojects {
     group = rootProject.group
@@ -29,14 +29,14 @@ val generateFlagPack = tasks.register<Exec>("generateFlagPack") {
     outputs.file("resource-pack/BetterChat-Flags.zip")
 }
 
-val preReleaseDirectory = layout.buildDirectory.dir("pre-release/$version")
+val releaseDirectory = layout.buildDirectory.dir("release/$version")
 
-val preparePreRelease = tasks.register<Sync>("preparePreRelease") {
+val prepareRelease = tasks.register<Sync>("prepareRelease") {
     group = "distribution"
-    description = "Builds the BetterChat pre-release assets and collects the three plugins with the resource pack."
+    description = "Builds the BetterChat release assets and collects the three plugins with the resource pack."
     dependsOn(":paper:shadowJar", ":bungeecord:shadowJar", ":velocity:shadowJar", generateFlagPack)
 
-    into(preReleaseDirectory)
+    into(releaseDirectory)
     from(project(":paper").layout.buildDirectory.dir("libs")) {
         include("BetterChat-Paper-$version.jar")
     }
@@ -54,12 +54,12 @@ val preparePreRelease = tasks.register<Sync>("preparePreRelease") {
         rename { "RELEASE-NOTES.md" }
     }
 
-    val checksumsFile = preReleaseDirectory.map { it.file("SHA256SUMS") }
-    val resourcePackSha1File = preReleaseDirectory.map { it.file("RESOURCE-PACK-SHA1.txt") }
+    val checksumsFile = releaseDirectory.map { it.file("SHA256SUMS") }
+    val resourcePackSha1File = releaseDirectory.map { it.file("RESOURCE-PACK-SHA1.txt") }
     outputs.file(checksumsFile)
     outputs.file(resourcePackSha1File)
     doLast {
-        val directory = preReleaseDirectory.get().asFile
+        val directory = releaseDirectory.get().asFile
         val assets = listOf(
             "BetterChat-Paper-$version.jar",
             "BetterChat-BungeeCord-$version.jar",
@@ -78,6 +78,12 @@ val preparePreRelease = tasks.register<Sync>("preparePreRelease") {
             "${resourcePackSha1.joinToString("") { byte -> "%02x".format(byte) }}\n"
         )
     }
+}
+
+val preparePreRelease = tasks.register("preparePreRelease") {
+    group = "distribution"
+    description = "Alias for prepareRelease"
+    dependsOn(prepareRelease)
 }
 
 allprojects {

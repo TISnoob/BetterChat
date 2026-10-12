@@ -31,6 +31,7 @@ public final class CountryCatalog {
     public static String flag(String code) {
         String normalized = PlayerPreferences.normalizeCountry(code);
         if (normalized.equals("EARTH")) return "🌍";
+        if (normalized.equals("ZZ")) return "🌐";
         if (normalized.length() != 2 || !normalized.chars().allMatch(c -> c >= 'A' && c <= 'Z')) return "🌐";
         int first = 0x1F1E6 + normalized.charAt(0) - 'A';
         int second = 0x1F1E6 + normalized.charAt(1) - 'A';
@@ -42,6 +43,7 @@ public final class CountryCatalog {
         String normalized = PlayerPreferences.normalizeCountry(code);
         int value;
         if (normalized.equals("EARTH")) value = 0xE6FF;
+        else if (normalized.equals("ZZ")) value = 0xE6FE;
         else if (normalized.length() == 2 && normalized.chars().allMatch(c -> c >= 'A' && c <= 'Z'))
             value = 0xE000 + (normalized.charAt(0) - 'A') * 26 + normalized.charAt(1) - 'A';
         else return "🌐";

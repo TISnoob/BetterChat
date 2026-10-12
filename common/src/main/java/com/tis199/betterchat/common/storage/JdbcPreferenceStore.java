@@ -61,7 +61,7 @@ public final class JdbcPreferenceStore implements PreferenceStore {
                 }
             }
         }
-        if (dataSource.getJdbcUrl().startsWith("jdbc:mariadb:")) {
+        if (isMysqlOrMariaDb(dataSource.getJdbcUrl())) {
             try (Connection connection = dataSource.getConnection()) {
                 int languageSize = columnSize(connection.getMetaData(), "language");
                 int countrySize = columnSize(connection.getMetaData(), "country");
@@ -74,6 +74,10 @@ public final class JdbcPreferenceStore implements PreferenceStore {
                 }
             }
         }
+    }
+
+    private static boolean isMysqlOrMariaDb(String url) {
+        return url != null && (url.startsWith("jdbc:mariadb:") || url.startsWith("jdbc:mysql:"));
     }
 
     private static int columnSize(DatabaseMetaData metadata, String columnName) throws SQLException {
@@ -100,7 +104,7 @@ public final class JdbcPreferenceStore implements PreferenceStore {
                 try (ResultSet rows = statement.executeQuery()) {
                     if (!rows.next()) return Optional.empty();
                     return Optional.of(new PlayerPreferences(uniqueId, rows.getString(1), rows.getString(2),
-                            rows.getBoolean(3), rows.getBoolean(4)));
+                             rows.getBoolean(3), rows.getBoolean(4)));
                 }
             } catch (SQLException exception) {
                 throw new IllegalStateException("Could not load BetterChat preferences", exception);
@@ -116,8 +120,8 @@ public final class JdbcPreferenceStore implements PreferenceStore {
                     + "ON CONFLICT(uuid) DO UPDATE SET language=excluded.language, country=excluded.country, "
                     + "automatic_country=excluded.automatic_country, "
                     + "translation_enabled=excluded.translation_enabled";
-            // MariaDB uses a different upsert clause; select it from the configured JDBC URL.
-            if (dataSource.getJdbcUrl().startsWith("jdbc:mariadb:")) {
+            // MySQL and MariaDB use a different upsert clause; select it from the configured JDBC URL.
+            if (isMysqlOrMariaDb(dataSource.getJdbcUrl())) {
                 sql = "INSERT INTO betterchat_users(uuid, language, country, automatic_country, translation_enabled) "
                         + "VALUES(?, ?, ?, ?, ?) "
                         + "ON DUPLICATE KEY UPDATE language=VALUES(language), country=VALUES(country), "

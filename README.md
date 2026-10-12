@@ -43,7 +43,7 @@ PlaceholderAPI, LuckPerms, Vault, and VentureChat are optional integrations. Bet
 
 ### One Paper or Folia server
 
-1. Download `BetterChat-Paper-0.1.0-pre.1.jar` from the pre-release assets or build it with Gradle.
+1. Download `BetterChat-Paper-1.1.3.jar` from the release assets or build it with Gradle.
 2. Put it in `plugins/` and start the server once.
 3. Edit `plugins/BetterChat/config.yml` for storage and flags. Keep `proxy-mode.enabled: false` and `storage.type: sqlite` for a standalone server.
 4. Edit `plugins/BetterChat/ai.yml` for chat behavior and AI provider keys. Enable `chat.translation-enabled` if you want chat translated, then restart.
@@ -123,21 +123,21 @@ See [Translation setup and provider examples](docs/TRANSLATION.md). Provider API
 This compiles the three plugin jars and regenerates the flag pack. Outputs:
 
 ```text
-paper/build/libs/BetterChat-Paper-0.1.0-pre.1.jar
-bungeecord/build/libs/BetterChat-BungeeCord-0.1.0-pre.1.jar
-velocity/build/libs/BetterChat-Velocity-0.1.0-pre.1.jar
+paper/build/libs/BetterChat-Paper-1.1.3.jar
+bungeecord/build/libs/BetterChat-BungeeCord-1.1.3.jar
+velocity/build/libs/BetterChat-Velocity-1.1.3.jar
 resource-pack/BetterChat-Flags.zip
 ```
 
-`python3` and Java 25 are required for the pack generator. The pack graphics are checked in, so regular Gradle builds do not need network access to fetch flags.
+`python3` and Java are required for the pack generator. The pack graphics are checked in, so regular Gradle builds do not need network access to fetch flags.
 
-To collect the pre-release assets and checksums in one directory, run:
+To collect the release assets and checksums in one directory, run:
 
 ```shell
-./gradlew preparePreRelease
+./gradlew prepareRelease
 ```
 
-The bundle is written to `build/pre-release/0.1.0-pre.1/` and contains the Paper, BungeeCord, and Velocity jars, the versioned flag pack, `RELEASE-NOTES.md`, `SHA256SUMS`, and the pack's `RESOURCE-PACK-SHA1.txt` for Minecraft server configuration.
+The bundle is written to `build/release/1.1.3/` and contains the Paper, BungeeCord, and Velocity jars, the versioned flag pack, `RELEASE-NOTES.md`, `SHA256SUMS`, and the pack's `RESOURCE-PACK-SHA1.txt` for Minecraft server configuration.
 
 ## Documentation
 

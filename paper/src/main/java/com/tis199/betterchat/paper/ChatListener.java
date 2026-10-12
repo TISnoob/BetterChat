@@ -40,17 +40,17 @@ final class ChatListener implements Listener {
         Player sender = event.getPlayer();
         PlayerPreferences senderPreferences = plugin.preferences().get(sender.getUniqueId());
         String original = PlainTextComponentSerializer.plainText().serialize(event.message());
-        if (!plugin.shouldUseBuiltInFormat()) {
-            if (plugin.settings().bool("proxy-mode.enabled", false)
-                    || !plugin.isTranslationEnabled() || !plugin.hasTranslationProviders()) return;
-            event.setCancelled(true);
-            processWithRenderer(sender, event.renderer(), sender.displayName(), event.message(), original,
-                    playerViewers(event.viewers()));
-            return;
-        }
         if (config.bool("proxy-mode.enabled", false)) {
             event.setCancelled(true);
             plugin.relayChat(sender, senderPreferences, original);
+            return;
+        }
+
+        if (!plugin.shouldUseBuiltInFormat()) {
+            if (!plugin.isTranslationEnabled() || !plugin.hasTranslationProviders()) return;
+            event.setCancelled(true);
+            processWithRenderer(sender, event.renderer(), sender.displayName(), event.message(), original,
+                    playerViewers(event.viewers()));
             return;
         }
 
@@ -103,6 +103,7 @@ final class ChatListener implements Listener {
         YamlConfig config = plugin.settings();
         for (Player viewer : viewers) {
             PlayerPreferences target = listenerPreferences.get(viewer.getUniqueId());
+            if (target == null) target = plugin.preferences().get(viewer.getUniqueId());
             boolean wantsTranslation = target.translationEnabled()
                     && !target.language().equals(senderPreferences.language());
             String translated = !wantsTranslation ? null
@@ -116,7 +117,7 @@ final class ChatListener implements Listener {
     }
 
     void onProxyMessage(ProxyChatMessage packet) {
-        if (!plugin.settings().bool("chat.enabled", true) || !plugin.shouldUseBuiltInFormat()) return;
+        if (!plugin.settings().bool("chat.enabled", true)) return;
         PlayerPreferences sender = new PlayerPreferences(UUID.fromString(packet.senderId()),
                 packet.language(), packet.country(), false);
         List<Player> viewers = new ArrayList<>(plugin.getServer().getOnlinePlayers());
@@ -177,8 +178,10 @@ final class ChatListener implements Listener {
         String consoleLanguage = config.string("defaults.console-language", "en_us");
         String template = config.string("chat.console-format", "[<language>] <player>: <message>");
         plugin.getLogger().info("[Chat/original] " + consoleLine(template, "original", senderName, original));
-        plugin.getLogger().info("[Chat/" + consoleLanguage + "] " + consoleLine(template, consoleLanguage,
-                senderName, translated.getOrDefault(consoleLanguage, original)));
+        if (config.bool("chat.translate-console", true)) {
+            plugin.getLogger().info("[Chat/" + consoleLanguage + "] " + consoleLine(template, consoleLanguage,
+                    senderName, translated.getOrDefault(consoleLanguage, original)));
+        }
     }
 
     private static String consoleLine(String template, String language, String player, String message) {
